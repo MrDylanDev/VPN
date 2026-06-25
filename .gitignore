@@ -1,0 +1,13 @@
+# AI tool directories
+.atl/
+.pi/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+*.env
+*.pem
+*.key
+secrets/
