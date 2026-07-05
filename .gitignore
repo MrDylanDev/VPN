@@ -11,3 +11,16 @@ Thumbs.db
 *.pem
 *.key
 secrets/
+
+# Node / Vite
+node_modules/
+dist/
+.vite/
+
+# Svelte
+.svelte-kit/
+
+# Rust / Tauri
+src-tauri/target/
+src-tauri/gen/
+*.lock

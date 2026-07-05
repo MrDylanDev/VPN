@@ -1,0 +1,51 @@
+{
+  "app.name": "WireGuard VPN Client",
+  "app.tagline": "Secure, fast, private VPN",
+
+  "status.connected": "Connected",
+  "status.disconnected": "Disconnected",
+  "status.connecting": "Connecting...",
+  "status.disconnecting": "Disconnecting...",
+
+  "button.connect": "Connect",
+  "button.disconnect": "Disconnect",
+  "button.save": "Save",
+  "button.cancel": "Cancel",
+  "button.delete": "Delete",
+  "button.provision": "Provision Server",
+  "button.destroy": "Destroy",
+  "button.settings": "Settings",
+
+  "server.title": "Servers",
+  "server.empty": "No servers provisioned",
+  "server.provision_first": "Provision your first server",
+  "server.destroy_confirm": "Are you sure you want to destroy this server?",
+
+  "provider.title": "Provider Configuration",
+  "provider.select": "Select Provider",
+  "provider.token": "API Token",
+  "provider.region": "Region",
+  "provider.size": "Size",
+  "provider.token_required": "API token is required",
+
+  "progress.creating_vps": "Creating VPS...",
+  "progress.installing_wg": "Installing WireGuard...",
+  "progress.done": "Done",
+  "progress.failed": "Failed",
+
+  "settings.title": "Settings",
+  "settings.language": "Language",
+  "settings.theme": "Theme",
+  "settings.theme_light": "Light",
+  "settings.theme_dark": "Dark",
+  "settings.theme_system": "System",
+
+  "error.generic": "An error occurred",
+  "error.auth_failed": "Authentication failed",
+  "error.provision_failed": "Provisioning failed",
+  "error.tunnel_failed": "Tunnel connection failed",
+  "error.no_server": "No server provisioned",
+
+  "language.en": "English",
+  "language.es": "Español"
+}
