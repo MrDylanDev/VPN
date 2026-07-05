@@ -1,0 +1,51 @@
+{
+  "app.name": "Cliente VPN WireGuard",
+  "app.tagline": "VPN segura, rápida y privada",
+
+  "status.connected": "Conectado",
+  "status.disconnected": "Desconectado",
+  "status.connecting": "Conectando...",
+  "status.disconnecting": "Desconectando...",
+
+  "button.connect": "Conectar",
+  "button.disconnect": "Desconectar",
+  "button.save": "Guardar",
+  "button.cancel": "Cancelar",
+  "button.delete": "Eliminar",
+  "button.provision": "Aprovisionar Servidor",
+  "button.destroy": "Destruir",
+  "button.settings": "Configuración",
+
+  "server.title": "Servidores",
+  "server.empty": "No hay servidores aprovisionados",
+  "server.provision_first": "Aprovisiona tu primer servidor",
+  "server.destroy_confirm": "¿Estás seguro de que querés destruir este servidor?",
+
+  "provider.title": "Configuración del Proveedor",
+  "provider.select": "Seleccionar Proveedor",
+  "provider.token": "Token de API",
+  "provider.region": "Región",
+  "provider.size": "Tamaño",
+  "provider.token_required": "El token de API es obligatorio",
+
+  "progress.creating_vps": "Creando VPS...",
+  "progress.installing_wg": "Instalando WireGuard...",
+  "progress.done": "Completado",
+  "progress.failed": "Falló",
+
+  "settings.title": "Configuración",
+  "settings.language": "Idioma",
+  "settings.theme": "Tema",
+  "settings.theme_light": "Claro",
+  "settings.theme_dark": "Oscuro",
+  "settings.theme_system": "Sistema",
+
+  "error.generic": "Ocurrió un error",
+  "error.auth_failed": "Error de autenticación",
+  "error.provision_failed": "Error al aprovisionar",
+  "error.tunnel_failed": "Error de conexión del túnel",
+  "error.no_server": "No hay servidor aprovisionado",
+
+  "language.en": "English",
+  "language.es": "Español"
+}
