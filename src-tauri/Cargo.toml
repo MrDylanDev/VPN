@@ -23,6 +23,7 @@ ssh2 = "0.9"
 aes-gcm = "0.10"
 base64 = "0.22"
 rand = "0.8"
+rsa = { version = "0.9", features = ["pem"] }
 keyring = "3"
 thiserror = "2"
 log = "0.4"
@@ -30,6 +31,9 @@ log = "0.4"
 [target.'cfg(target_os = "linux")'.dependencies]
 # Required for Secret Service keyring on Linux
 # dbus-secret-service may be needed depending on keyring backend
+
+[dev-dependencies]
+wiremock = "0.6"
 
 [features]
 default = ["custom-protocol"]
