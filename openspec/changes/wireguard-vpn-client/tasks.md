@@ -43,14 +43,17 @@ Chain strategy: stacked-to-main
 - [x] 2.4 Wire config + i18n at app startup (CF-5, I18N-2)
 - [x] 2.5 Test: save/load config, corruption recovery, token CRUD (CF-S1, CF-S2, CPA-S3)
 
-## Phase 3: Cloud Providers
+## Phase 3: Cloud Providers ✅
 
-- [ ] 3.1 CloudProvider trait + CloudError enum (SP-1)
-- [ ] 3.2 DigitalOcean: create/list/destroy droplets, regions, validate token (CPA-5, SP-1, SP-6)
-- [ ] 3.3 Hetzner: create/list/destroy servers, validate token (CPA-5, SP-1, SP-6)
-- [ ] 3.4 Oracle: create/list/destroy instances via OCI, validate token (CPA-5, SP-1, SP-6)
-- [ ] 3.5 Exponential backoff retry on rate limits / 5xx (SP-4)
-- [ ] 3.6 Test: token validation, create with recorded responses (CPA-S1, CPA-S2)
+- [x] 3.1 CloudProvider trait + CloudError enum (SP-1)
+- [x] 3.2 DigitalOcean: create/list/destroy droplets, regions, validate token (CPA-5, SP-1, SP-6)
+- [x] 3.3 Hetzner: create/list/destroy servers, validate token (CPA-5, SP-1, SP-6)
+- [x] 3.4 Oracle: create/list/destroy instances via OCI, validate token (CPA-5, SP-1, SP-6)
+- [x] 3.5 Exponential backoff retry on rate limits / 5xx (SP-4)
+- [x] 3.6 Test: token validation, create with recorded responses (CPA-S1, CPA-S2)
+  - 37/37 tests passing — DO (10), Hetzner (10), OCI (10), Retry (7)
+  - PR 1: feat/phase-3-cloud-pr1 (#4) — Foundation + DO + Hetzner + Retry
+  - PR 2: feat/phase-3-cloud-pr2 (#5) — Oracle OCI with RSA-SHA256 signing
 
 ## Phase 4: Server Provisioning
 

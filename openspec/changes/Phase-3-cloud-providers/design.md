@@ -134,6 +134,7 @@ pub use retry::RetryCloudProvider;
 [dependencies]
 reqwest = { version = "0.12", features = ["json"] }
 rsa = { version = "0.9", features = ["pem"] }
+sha2 = "0.10"
 
 [dev-dependencies]
 wiremock = "0.6"

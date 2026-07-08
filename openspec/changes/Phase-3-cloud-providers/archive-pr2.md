@@ -121,7 +121,7 @@ POST requests additionally set `Content-Type: application/json`. This factorizat
 | `new(compartment_id)` | `new(region, compartment_id)` — region required | Correct — OCI API URL is per-region |
 | Bearer-style auth implied | RFC 7235 Signature with RSA-SHA256 | Correct per OCI API requirements |
 | Signing uses hash-then-sign with DigestInfo prefix | `Pkcs1v15Sign::new_unprefixed()` with manual DigestInfo | Correct — matches OCI's expected signing format |
-| Spec listed `rsa = "0.9"` with `pem` feature only | Cargo.toml has `rsa` with `pem` feature; code also uses `pkcs1` and `sha2` re-exports via `rsa` | These are re-exported by the `rsa` crate — no additional manifest changes needed |
+| Spec listed `rsa = "0.9"` with `pem` feature only | Cargo.toml has `rsa` with `pem` feature + `sha2 = "0.10"` direct dep | `sha2::{Digest, Sha256}` used directly in OCI signing — not a re-export. `sha2 = "0.10"` is required for compilation |
 
 ---
 
