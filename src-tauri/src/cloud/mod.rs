@@ -103,7 +103,9 @@ pub trait CloudProvider {
 pub mod r#do;
 pub mod hz;
 pub mod retry;
+pub mod oci;
 
 pub use r#do::DigitalOceanProvider;
 pub use hz::HetznerProvider;
 pub use retry::RetryCloudProvider;
+pub use oci::OracleCloudProvider;
