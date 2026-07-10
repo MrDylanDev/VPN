@@ -32,15 +32,17 @@ impl<'p, P: CloudProvider> ProvisionManager<'p, P> {
         Self { cloud, token }
     }
 
-    /// Run the full provision flow with a 5-minute overall timeout.
+    /// Run the full provision flow.
+    ///
+    /// VPS creation and readiness waits are kept outside the timeout so that
+    /// `cleanup_vps` is always reachable if the timeout fires. Only the SSEH
+    /// provisioning portion is time-limited (270 s).
     pub async fn run(
         &mut self,
         params: &ProvisionParams,
         data_dir: PathBuf,
     ) -> Result<PeerConfig, ProvisionError> {
-        tokio::time::timeout(Duration::from_secs(300), self.run_inner(params, data_dir))
-            .await
-            .map_err(|_| ProvisionError::Timeout)?
+        self.run_inner(params, data_dir).await
     }
 
     async fn run_inner(
@@ -48,7 +50,7 @@ impl<'p, P: CloudProvider> ProvisionManager<'p, P> {
         params: &ProvisionParams,
         data_dir: PathBuf,
     ) -> Result<PeerConfig, ProvisionError> {
-        // ── Step 1: Create or reuse VPS ───────────────────────────────────
+        // ── Step 1: Create VPS ────────────────────────────────────────────
         let instance = self.cloud.create_vps(params, self.token).await?;
 
         // ── Step 2: ProvisionGuard for automatic rollback ─────────────────
@@ -60,18 +62,27 @@ impl<'p, P: CloudProvider> ProvisionManager<'p, P> {
         // ── Step 4: Wait for TCP port 22 ──────────────────────────────────
         self.wait_for_port_22(&instance.ip).await?;
 
-        // ── Step 5-7: SSH provision with retry-once ───────────────────────
-        let result = self.try_ssh_provision(&instance, &data_dir).await;
+        // ── Step 5-7: SSH provision with retry-once (timeout-guarded) ────
+        // Timeout wraps ONLY the SSH portion so cleanup_vps always runs if
+        // the network hangs during provisioning.
+        let ssh_result = tokio::time::timeout(
+            Duration::from_secs(270),
+            self.try_ssh_provision(&instance, &data_dir),
+        )
+        .await;
 
-        match result {
-            Ok(pc) => {
+        match ssh_result {
+            Ok(Ok(pc)) => {
                 guard.commit();
                 Ok(pc)
             }
-            Err(e) => {
-                // Explicitly destroy on error
+            Ok(Err(e)) => {
                 self.cleanup_vps(&instance).await;
                 Err(e)
+            }
+            Err(_elapsed) => {
+                self.cleanup_vps(&instance).await;
+                Err(ProvisionError::Timeout)
             }
         }
     }
@@ -130,10 +141,19 @@ impl<'p, P: CloudProvider> ProvisionManager<'p, P> {
                 }
             }
 
-            // Verify WireGuard is installed
+            // Verify WireGuard is installed (Fix 3: check output)
             let (verify_out, _) = session
                 .execute("wg show 2>/dev/null && echo 'WG_OK' || echo 'WG_MISSING'")
                 .map_err(ProvisionError::Ssh)?;
+
+            log::info!("WireGuard verify: {}", verify_out.trim());
+            if !verify_out.contains("WG_OK") {
+                return Err(ProvisionError::Ssh(SshError::Exec {
+                    code: 1,
+                    stdout: verify_out,
+                    stderr: "WireGuard not functional after install".into(),
+                }));
+            }
 
             let vk = signing_key.verifying_key();
             let client_pub_key = base64::Engine::encode(
@@ -141,10 +161,36 @@ impl<'p, P: CloudProvider> ProvisionManager<'p, P> {
                 vk.to_bytes(),
             );
 
+            // ── Fix 2: Upload client pubkey and configure wg0.conf ────────
+            session
+                .execute(&format!("echo '{}' > /tmp/client.pub", client_pub_key))
+                .map_err(ProvisionError::Ssh)?;
+
+            let (wg_out, wg_err) = session
+                .execute(scripts::CONFIGURE_WIREGUARD)
+                .map_err(ProvisionError::Ssh)?;
+            log::info!("WG configure: {wg_out}");
+            if !wg_err.is_empty() {
+                log::warn!("WG configure stderr: {wg_err}");
+            }
+
+            // Read the server's WireGuard public key
+            let (pubkey_out, _) = session
+                .execute("cat /etc/wireguard/server.pub")
+                .map_err(ProvisionError::Ssh)?;
+            let server_pub_key = pubkey_out.trim().to_string();
+            if server_pub_key.is_empty() {
+                return Err(ProvisionError::Ssh(SshError::Exec {
+                    code: 1,
+                    stdout: pubkey_out,
+                    stderr: "Server public key is empty — server keypair may not have been generated".into(),
+                }));
+            }
+
             let endpoint = format!("{}:51820", ip);
             let peer_config = PeerConfig {
                 endpoint,
-                server_public_key: String::new(),
+                server_public_key: server_pub_key,
                 client_private_key: base64::Engine::encode(
                     &base64::engine::general_purpose::STANDARD,
                     signing_key.to_bytes(),
@@ -201,11 +247,12 @@ impl<'p, P: CloudProvider> ProvisionManager<'p, P> {
 // ProvisionGuard
 // ---------------------------------------------------------------------------
 
-/// A Drop guard that logs if a VPS was not committed.
+/// A Drop guard that destroys the VPS if not committed.
 ///
-/// The guard exists as a safety net: in normal error flow,
-/// [`ProvisionManager::cleanup_vps`] destroys the VPS explicitly. If the guard
-/// is dropped without being consumed (e.g., during a panic), it at least logs.
+/// In normal error flow, [`ProvisionManager::cleanup_vps`] destroys the VPS
+/// explicitly. The guard is the safety net for panics or cancellation: if
+/// dropped without [`commit`](Self::commit) having been called, it attempts
+/// to destroy the VPS via `tokio::runtime::Handle::block_on`.
 pub struct ProvisionGuard<'p, P: CloudProvider> {
     cloud: &'p P,
     token: &'p str,
@@ -238,14 +285,25 @@ impl<'p, P: CloudProvider> ProvisionGuard<'p, P> {
 
 impl<P: CloudProvider> Drop for ProvisionGuard<'_, P> {
     fn drop(&mut self) {
-        // If the guard still holds an instance, the caller forgot to commit
-        // or cleanup. This can happen during panics or if the guard is
-        // simply dropped without explicit cleanup.
         if let Some(ref instance) = self.instance {
             log::warn!(
-                "ProvisionGuard dropped without commit for VPS {}. Manual cleanup advised.",
+                "ProvisionGuard dropped without commit for VPS {} — attempting automatic destroy.",
                 instance.id
             );
+            // Safety net: try to destroy the VPS via the current tokio runtime.
+            // This handles panics and cancellation that bypass the explicit
+            // cleanup_vps call in run_inner.
+            if let Ok(handle) = tokio::runtime::Handle::try_current() {
+                let _ = handle.block_on(
+                    self.cloud.destroy_vps(&instance.id, self.token),
+                );
+            } else {
+                log::error!(
+                    "No tokio runtime available — VPS {} may be orphaned. \
+                     Manual cleanup required.",
+                    instance.id
+                );
+            }
         }
     }
 }

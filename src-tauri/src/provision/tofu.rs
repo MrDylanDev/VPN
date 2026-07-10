@@ -7,6 +7,7 @@
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
+use std::sync::Mutex;
 
 use crate::provision::error::SshError;
 
@@ -14,8 +15,12 @@ use crate::provision::error::SshError;
 ///
 /// Data is persisted as `{ "10.0.0.1": "SHA256:abc123...", ... }` in
 /// `<data_dir>/vpn_known_hosts.json`.
+///
+/// All public methods serialize access through an internal [`Mutex`] to
+/// prevent read-modify-write races when called concurrently.
 pub struct TofuStore {
     path: PathBuf,
+    lock: Mutex<()>,
 }
 
 impl TofuStore {
@@ -25,7 +30,10 @@ impl TofuStore {
     /// if it does not already exist.
     pub fn new(data_dir: PathBuf) -> Self {
         let path = data_dir.join("vpn_known_hosts.json");
-        Self { path }
+        Self {
+            path,
+            lock: Mutex::new(()),
+        }
     }
 
     /// Verify a fingerprint for the given `ip`.
@@ -40,6 +48,7 @@ impl TofuStore {
     /// Returns [`SshError::HostKeyMismatch`] when the stored fingerprint differs
     /// from the provided value.
     pub fn verify(&self, ip: &str, fingerprint: &str) -> Result<(), SshError> {
+        let _guard = self.lock.lock().unwrap();
         let store = self.load_store();
         if let Some(stored) = store.get(ip) {
             if stored != fingerprint {
@@ -57,6 +66,7 @@ impl TofuStore {
     ///
     /// Overwrites any previously stored fingerprint for this IP.
     pub fn store(&self, ip: &str, fingerprint: &str) {
+        let _guard = self.lock.lock().unwrap();
         let mut store = self.load_store();
         store.insert(ip.to_string(), fingerprint.to_string());
         self.save_store(&store);
@@ -64,6 +74,7 @@ impl TofuStore {
 
     /// Remove the stored fingerprint for `ip`, if any.
     pub fn remove(&self, ip: &str) {
+        let _guard = self.lock.lock().unwrap();
         let mut store = self.load_store();
         store.remove(ip);
         self.save_store(&store);

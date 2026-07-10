@@ -16,6 +16,12 @@ pub const CONFIGURE_SYSCTL: &str = include_str!("scripts/configure-sysctl.sh");
 /// Set DNS resolvers to 1.1.1.1 and 1.0.0.1.
 pub const CONFIGURE_DNS: &str = include_str!("scripts/configure-dns.sh");
 
+/// Create wg0.conf with the client public key and start wg-quick.
+///
+/// NOT included in `ALL_SCRIPTS` because it needs the client WireGuard
+/// public key as runtime input (written to `/tmp/client.pub` first).
+pub const CONFIGURE_WIREGUARD: &str = include_str!("scripts/configure-wireguard.sh");
+
 /// All provisioning scripts in execution order.
 pub const ALL_SCRIPTS: &[&str] = &[
     INSTALL_WIREGUARD,
@@ -31,6 +37,11 @@ pub const ALL_SCRIPTS: &[&str] = &[
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn configure_wireguard_is_valid_utf8() {
+        assert!(std::str::from_utf8(CONFIGURE_WIREGUARD.as_bytes()).is_ok());
+    }
 
     #[test]
     fn install_wireguard_is_valid_utf8() {

@@ -82,12 +82,16 @@ async fn provision_server(
 
     match provider.as_str() {
         "digitalocean" => {
-            let cloud = cloud::DigitalOceanProvider::new().map_err(|e| e.to_string())?;
+            let cloud = cloud::RetryCloudProvider::new(
+                cloud::DigitalOceanProvider::new().map_err(|e| e.to_string())?,
+            );
             let mut manager = ProvisionManager::new(&cloud, &token);
             manager.run(&params, data_dir).await.map_err(|e| e.to_string())
         }
         "hetzner" => {
-            let cloud = cloud::HetznerProvider::new().map_err(|e| e.to_string())?;
+            let cloud = cloud::RetryCloudProvider::new(
+                cloud::HetznerProvider::new().map_err(|e| e.to_string())?,
+            );
             let mut manager = ProvisionManager::new(&cloud, &token);
             manager.run(&params, data_dir).await.map_err(|e| e.to_string())
         }
@@ -105,14 +109,18 @@ async fn destroy_server(
 ) -> Result<(), String> {
     let result = match provider.as_str() {
         "digitalocean" => {
-            let cloud = cloud::DigitalOceanProvider::new().map_err(|e| e.to_string())?;
+            let cloud = cloud::RetryCloudProvider::new(
+                cloud::DigitalOceanProvider::new().map_err(|e| e.to_string())?,
+            );
             cloud
                 .destroy_vps(&instance_id, &token)
                 .await
                 .map_err(|e| e.to_string())
         }
         "hetzner" => {
-            let cloud = cloud::HetznerProvider::new().map_err(|e| e.to_string())?;
+            let cloud = cloud::RetryCloudProvider::new(
+                cloud::HetznerProvider::new().map_err(|e| e.to_string())?,
+            );
             cloud
                 .destroy_vps(&instance_id, &token)
                 .await
