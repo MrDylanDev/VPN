@@ -3,6 +3,19 @@
 //! Handles the end-to-end flow of creating a VPS, installing WireGuard, and
 //! generating peer configuration. Manages rollback on failure.
 
+pub mod error;
+pub mod scripts;
+pub mod ssh;
+pub mod tofu;
+
+mod manager;
+
+pub use error::{ProvisionError, SshError};
+pub use manager::ProvisionManager;
+pub use scripts::{CONFIGURE_DNS, CONFIGURE_FIREWALL, CONFIGURE_SYSCTL, INSTALL_WIREGUARD};
+pub use ssh::SshSession;
+pub use tofu::TofuStore;
+
 /// The peer configuration returned after successful provisioning.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct PeerConfig {
